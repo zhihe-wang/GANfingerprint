@@ -81,3 +81,45 @@ We can see it doesn't work well on deepfake manipulation detection.
 Then, We tried to re-train the whole network or just re-train the last linear layer of the network with our FaceForensics++ dataset. We used lots of time to fine-tune their network, but the result is not so good, even worse.
 
 ## Yu's Attributing Fake Images to GANs - Learning and Analyzing GAN Fingerprints
+
+We try to debug the code. Our attribution network can achieve about 30% accuracy on the FaceForensics++ dataset.
+
+Since we are using the different dataset from their paper, the result will perform very bad. Obviously, their dataset is all based on GAN method and fully-synthetical images. However, FaceForensics++ dataset is not all based on GAN method. Deepfake only use Autoencoder. Face2Face and FaceSwap are not learning-based. Only NeuralTexture use GAN method.
+
+So, we are not attributing the GAN fingerprint like that on the paper, maybe some other fingerprints. Thus, our attribution work doesn't work well when using their proposed attribution network.
+
+## Neves' GANprintR - Improved Fakes and Evaluation of the State-of-the-Art in Face Manipulation Detection
+
+We try to implement this paper in the following steps:
+1. Train the classifier (XceptionNet) on the DeepFake dataset and test on the DeepFake dataset.
+2. Train the Autoencoder (GANprintR) on the CelebA dataset and remove the "GAN fingerprint" of the DeepFake dataset.
+3. Use the trained classifier to test the "removed fingerprint" DeepFake dataset and test the "applied Gaussian blur" Deepfake dataset and the other four manipulation dataset in FaceForensics++ dataset.
+
+The transformed images and test result can be shown as below. From left to right, they are original DF, printR DF and Guassian blur DF. We can see there is little visual difference between each other.
+
+<div align=center>
+<img width="200" height="200" src="./README/DF_original.jpg">
+<img width="200" height="200" src="./README/DF_printR.jpg" >
+<img width="200" height="200" src="./README/DF_gaussian.jpg" >
+</div>
+
+```
+Test:DF_original, Test Accuracy:84.00%, Test Recall:78.00%.
+
+Test:DF_printR, Test Accuracy:78.00%, Test Recall:95.00%.
+
+Test:DF_gaussian, Test Accuracy:73.00%, Test Recall:96.00%.
+
+Test:F2F_original, Test Accuracy:55.50%, Test Recall:21.00%.
+
+Test:FS_original, Test Accuracy:50.00%, Test Recall:10.00%.
+
+Test:NT_original, Test Accuracy:55.50%, Test Recall:21.00%.
+
+Test:FSft_original, Test Accuracy:58.00%, Test Recall:26.00%.
+```
+
+From the result, we can see the XceptionNet classifier can achieve a relative high test accuracy: 84% on Deepfake dataset. When we apply GANprintR and Gaussian blur to the dataset, its accuracy reduces to 78% and 73% respectively. It shows that in our experiment, the GANprintR can be less likely to remove some "fingerprint" (we are not sure what fingerprint, but at least not GAN fingerprint) than the simple Gaussian blur.
+
+When we use the classifier to test on the other four datasets, its accuract reduces sharply because the classifier was trained on the Deepfake dataset. That indicates that what this classifier learned from one dataset can not generalize to detect the fake on the other datasets. In other word, the classifier fail to learn the general fingerprint.
+

@@ -1,5 +1,5 @@
 import os
-import time
+from datetime import datetime
 
 import torch
 import numpy as np
@@ -14,11 +14,13 @@ class Block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(Block, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, 1)
+        self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.LeakyReLU()
         self.avgpool = nn.AvgPool2d(2,2)
         
     def forward(self, img):
         out = self.conv1(img)
+        out = self.bn(out)
         out = self.relu(out)
         out = self.avgpool(out)
         return out
@@ -31,9 +33,8 @@ class AttrNet(nn.Module):
         self.layer3 = Block(32, 64)
         self.layer4 = Block(64, 128)
         self.layer5 = Block(128, 256)
-        self.conv1 = nn.Conv2d(256, 512, 7)
-        self.relu = nn.LeakyReLU()
-        self.fc1 = nn.Linear(512, 6)
+        self.adapool = nn.AdaptiveAvgPool2d((2,2))
+        self.fc1 = nn.Linear(1024, 6)
     
     def forward(self, img):
         out = self.layer1(img)
@@ -41,7 +42,7 @@ class AttrNet(nn.Module):
         out = self.layer3(out)
         out = self.layer4(out)
         out = self.layer5(out)
-        out = self.relu(self.conv1(out))
+        out = self.adapool(out)
         out = out.view(out.size(0),-1)
         out = self.fc1(out)
         return out 
@@ -60,17 +61,15 @@ class AttrNet(nn.Module):
         ...
 '''
 
-#%% Train
 # Load model
 model = AttrNet().cuda()
 summary(model, input_size=(3, 224, 224))
-# model_path = './attrNet1.pth'
-# model.load_state_dict(torch.load(model_path))
 
+#%% Train
 # Hyper-parameters
-BATCH_SIZE = 4
-EPOCH = 3
-LR = 0.000000001
+BATCH_SIZE = 16
+EPOCH = 5
+LR = 1e-4
 train_path =  '../Dataset2/Training'
 val_path = '../Dataset2/Validation'
 
@@ -85,14 +84,14 @@ val_loader = DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=True)
 # Training method
 loss_function = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=LR)
-lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
+lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.1)
 
+model.load_state_dict(torch.load('./attrNet.pth'))
 for epoch in range(EPOCH):
     # Training
     model.train()
-    all_loss = []
+    run_loss = []
     for step, (image, label) in enumerate(train_loader):
-        time_start=time.time()
         image = image.cuda()
         label = label.cuda()
 
@@ -101,14 +100,17 @@ for epoch in range(EPOCH):
         loss = loss_function(output,label)
         loss.backward()
         optimizer.step()
-        lr_scheduler.step()
-        all_loss.append(loss.item())
         
-        time_end=time.time()
+        run_loss.append(loss.item())        
         if step % 100 == 0 and step != 0:
-            print('Epoch:{}, Step:{}, Training Loss:{:.2f}, Step Time:{:.2f}s'.
-                  format(epoch, step, sum(all_loss)/100, time_end-time_start))
-            all_loss = []
+            print(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f'))
+            string = 'Epoch:{}, Step:{}, Training Loss:{:.2f}'.format(
+                epoch, step, sum(run_loss)/len(run_loss))
+            print(string)
+            with open('log.txt','a') as log:
+                print(string, file=log)
+            run_loss = []
+    lr_scheduler.step()
     torch.save(model.state_dict(), './attrNet1.pth')
         
     # Validation
@@ -123,8 +125,12 @@ for epoch in range(EPOCH):
     y_true, y_pred = np.array(y_true), np.argmax(np.array(y_pred), axis=1)
         
     acc = accuracy_score(y_true, y_pred)
-    print('Epoch:{}, Validation Accuracy:{:.2%}.'.format(epoch, acc))
+    string = 'Epoch:{}, Validation Accuracy:{:.2%}.'.format(epoch, acc)
+    print(string)
+    with open('log.txt','a') as log:
+        print(string, file=log)
 
+#%%
 
 
 
