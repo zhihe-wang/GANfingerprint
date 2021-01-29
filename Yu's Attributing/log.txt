@@ -1,0 +1,20 @@
+Epoch:0, Step:100, Training Loss:1.71
+Epoch:0, Step:200, Training Loss:1.71
+Epoch:0, Step:300, Training Loss:1.68
+Epoch:0, Validation Accuracy:25.83%.
+Epoch:1, Step:100, Training Loss:1.65
+Epoch:1, Step:200, Training Loss:1.62
+Epoch:1, Step:300, Training Loss:1.64
+Epoch:1, Validation Accuracy:28.50%.
+Epoch:2, Step:100, Training Loss:1.58
+Epoch:2, Step:200, Training Loss:1.56
+Epoch:2, Step:300, Training Loss:1.56
+Epoch:2, Validation Accuracy:30.17%.
+Epoch:3, Step:100, Training Loss:1.54
+Epoch:3, Step:200, Training Loss:1.55
+Epoch:3, Step:300, Training Loss:1.54
+Epoch:3, Validation Accuracy:31.50%.
+Epoch:4, Step:100, Training Loss:1.53
+Epoch:4, Step:200, Training Loss:1.54
+Epoch:4, Step:300, Training Loss:1.53
+Epoch:4, Validation Accuracy:30.83%.
